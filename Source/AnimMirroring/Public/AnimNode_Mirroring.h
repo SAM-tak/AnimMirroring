@@ -1,23 +1,36 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "Containers/Map.h"
 #include "UObject/ObjectMacros.h"
-#include "Animation/AnimationAsset.h"
-#include "Animation/AnimNodeBase.h"
+#include "BoneControllers/AnimNode_SkeletalControlBase.h"
 #include "AnimMirroringData.h"
-#include "AnimMirroringInfo.h"
 
 #include "AnimNode_Mirroring.generated.h"
+
+struct FBoneContainer;
+
+/** ミラーリング対象 */
+USTRUCT()
+struct FMirrorTarget
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FBoneReference BoneRef;
+
+	UPROPERTY()
+	FBoneReference CounterpartBoneRef;
+
+	UPROPERTY()
+	EMirrorAxis MirrorAxis;
+};
 
 
 // Anim Behavior Node
 USTRUCT(BlueprintInternalUseOnly)
-struct ANIMMIRRORING_API FAnimNode_Mirroring : public FAnimNode_Base
+struct ANIMMIRRORING_API FAnimNode_Mirroring : public FAnimNode_SkeletalControlBase
 {
-	GENERATED_BODY()
-
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Links)
-	FComponentSpacePoseLink ComponentPose;
+	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	UAnimMirroringData* MirroringData;
@@ -29,23 +42,20 @@ struct ANIMMIRRORING_API FAnimNode_Mirroring : public FAnimNode_Base
 	bool MirroringEnable;
 
 protected:
-	FMirrorInfo MirrorInfo;
-	TArray<FTransform> ComponentSpaceRefPose;
+	TArray<FMirrorTarget> Targets;
 
+	// FAnimNode_SkeletalControlBase interface
+	virtual void EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms) override;
+	virtual bool IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones) override;
+	//virtual void InitializeBoneReferences(const FBoneContainer& RequiredBones) override;
+	// End of FAnimNode_SkeletalControlBase interface
 
 public:
 	// FAnimNode_Base interface
-	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
-	virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
-	virtual void Update_AnyThread(const FAnimationUpdateContext& Context) override;
-	//virtual void Evaluate_AnyThread(FPoseContext& Output) override;
-	virtual void EvaluateComponentSpace_AnyThread(FComponentSpacePoseContext& Output) override;
 	//virtual void GatherDebugData(FNodeDebugData& DebugData) override;
+	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
+	//virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
 	// End of FAnimNode_Base interface
 
-public:
 	FAnimNode_Mirroring();
-
-private:
-	void _MirrorPose(FComponentSpacePoseContext& Output, const TArray<FTransform>& CurrentTransforms, const FMirrorInfoItem& Item);
 };

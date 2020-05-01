@@ -2,124 +2,146 @@
 #include "AnimMirroringLog.h"
 #include "AnimationRuntime.h"
 #include "Animation/AnimInstanceProxy.h"
+#include "Animation/AnimationAsset.h"
+
+
+namespace {
+	inline FQuat HadamardProduct(const FQuat& q, const FVector4& v)
+	{
+		return FQuat(q.X * v.X, q.Y * v.Y, q.Z * v.Z, q.W * v.W);
+	};
+
+	inline void MirrorTransform(FTransform& InOutTransform, EMirrorAxis MirrorAxis)
+	{
+		switch(MirrorAxis) {
+		case EMirrorAxis::XAxis:
+			InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(-1.0f, 1.0f, 1.0f));
+			InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(1.0f, -1.0f, -1.0f, 1.0f)));
+			break;
+		case EMirrorAxis::YAxis:
+			InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(1.0f, -1.0f, 1.0f));
+			InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(-1.0f, 1.0f, -1.0f, 1.0f)));
+			break;
+		case EMirrorAxis::ZAxis:
+			InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(1.0f, 1.0f, -1.0f));
+			InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(-1.0f, -1.0f, 1.0f, 1.0f)));
+			break;
+		}
+	}
+}
 
 
 FAnimNode_Mirroring::FAnimNode_Mirroring()
-	: FAnimNode_Base()
+	: FAnimNode_SkeletalControlBase()
 	, MirroringData(nullptr)
 	, MirroringEnable(true)
 {
 }
 
 
-void FAnimNode_Mirroring::Initialize_AnyThread(const FAnimationInitializeContext & Context)
+void FAnimNode_Mirroring::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
-	ComponentPose.Initialize(Context);
+	FAnimNode_SkeletalControlBase::Initialize_AnyThread(Context);
 
-	const FBoneContainer& BoneContainer = Context.AnimInstanceProxy->GetRequiredBones();
+	const FBoneContainer& boneContainer = Context.AnimInstanceProxy->GetRequiredBones();
+	
+	Targets.Reserve(boneContainer.GetNumBones());
+	Targets.Empty();
 
-	ComponentSpaceRefPose.Reset();
-	ComponentSpaceRefPose.Reserve(BoneContainer.GetCompactPoseNumBones());
+	for (int i = 0; i < boneContainer.GetCompactPoseNumBones(); i++)
+	{
+		auto skeletonIndex = boneContainer.GetSkeletonIndex(FCompactPoseBoneIndex(i));
 
-	for (int32 iBone = 0; iBone < BoneContainer.GetCompactPoseNumBones(); iBone++) {
-		FCompactPoseBoneIndex boneIndex(iBone);
-		FTransform bonePose = BoneContainer.GetRefPoseTransform(boneIndex);
-
-		FCompactPoseBoneIndex parentIndex = BoneContainer.GetParentBoneIndex(boneIndex);
-		while (parentIndex.GetInt() != INDEX_NONE) {
-			FTransform parentPose = BoneContainer.GetRefPoseTransform(parentIndex);
-			bonePose = bonePose * parentPose;
-			parentIndex = BoneContainer.GetParentBoneIndex(parentIndex);
+		if (skeletonIndex >= boneContainer.GetNumBones())
+		{
+			continue;
 		}
-		ComponentSpaceRefPose.Add(bonePose);
+
+		auto boneName = boneContainer.GetReferenceSkeleton().GetBoneName(skeletonIndex);
+
+		for (auto j : Targets)
+		{
+			if(j.BoneRef.BoneName == boneName || (j.CounterpartBoneRef.BoneName.IsNone() && j.CounterpartBoneRef.BoneName == boneName)) continue;
+		}
+
+		FString counterBoneNameString;
+		auto mirrorAxis = FMirrorMatchData::FindMirrorAxis(OverrideMirrorMatches, boneName.ToString(), counterBoneNameString);
+
+		if(mirrorAxis == EMirrorAxis::None) mirrorAxis = MirroringData->FindMirrorAxis(boneName.ToString(), counterBoneNameString);
+
+		if (mirrorAxis != EMirrorAxis::None)
+		{
+			FMirrorTarget target;
+			target.MirrorAxis = mirrorAxis;
+
+			target.BoneRef.BoneName = boneName;
+
+			if (!counterBoneNameString.IsEmpty())
+			{
+				FName counterBoneName(*counterBoneNameString);
+				if (boneContainer.GetPoseBoneIndexForBoneName(counterBoneName) >= 0)
+				{
+					target.CounterpartBoneRef.BoneName = counterBoneName;
+				}
+			}
+			Targets.Add(target);
+		}
 	}
-
-	MirrorInfo.Initialize(OverrideMirrorMatches, MirroringData, BoneContainer);
 }
 
 
-void FAnimNode_Mirroring::CacheBones_AnyThread(const FAnimationCacheBonesContext & Context)
+void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms)
 {
-	ComponentPose.CacheBones(Context);
-}
-
-
-void FAnimNode_Mirroring::Update_AnyThread(const FAnimationUpdateContext & Context)
-{
-	GetEvaluateGraphExposedInputs().Execute(Context);
-	ComponentPose.Update(Context);
-}
-
-
-void FAnimNode_Mirroring::EvaluateComponentSpace_AnyThread(FComponentSpacePoseContext& Output)
-{
-	Output.ResetToRefPose();
-	ComponentPose.EvaluateComponentSpace(Output);
-	if (!MirroringEnable) {
+	if (!MirroringEnable)
+	{
 		return;
 	}
 
-	TArray<FTransform> CurrentTransforms;
-	CurrentTransforms.Reserve(Output.Pose.GetPose().GetNumBones());
-
-	// GetComponentSpaceTransform returns different value after SetComponentSpaceTransform called in mirror process loop.
-	// Then, store all current component space poses before process.
-	// ループ中にSetComponentSpaceTransformを使うと、GetComponentSpaceTransformの戻ってくる値が更新されてしまうので
-	// 先にすべてのポーズを保管しておく。
-	for (int32 iBone = 0; iBone < Output.Pose.GetPose().GetNumBones(); iBone++) {
-		CurrentTransforms.Add(Output.Pose.GetComponentSpaceTransform(FCompactPoseBoneIndex(iBone)));
-	}
+	FTransform componentTransform = Output.AnimInstanceProxy->GetComponentTransform();
+	const FBoneContainer& boneContainer = Output.Pose.GetPose().GetBoneContainer();
 
 	// mirroring pose.
-	for (int32 iPair = 0; iPair < MirrorInfo.Items.Num(); iPair++) {
-		_MirrorPose(Output, CurrentTransforms, MirrorInfo.Items[iPair]);
+	for (auto target : Targets)
+	{
+		target.BoneRef.Initialize(boneContainer);
+		if(target.BoneRef.IsValidToEvaluate()) {
+			auto ai = target.BoneRef.GetCompactPoseIndex(boneContainer);
+			auto at = Output.Pose.GetComponentSpaceTransform(ai);
+			FAnimationRuntime::ConvertCSTransformToBoneSpace(componentTransform, Output.Pose, at, ai, BCS_BoneSpace);
+			if (!target.CounterpartBoneRef.BoneName.IsNone())
+			{
+				target.CounterpartBoneRef.Initialize(boneContainer);
+			}
+			if (target.CounterpartBoneRef.IsValidToEvaluate())
+			{
+				auto bi = target.CounterpartBoneRef.GetCompactPoseIndex(boneContainer);
+				auto bt = Output.Pose.GetComponentSpaceTransform(bi);
+				FAnimationRuntime::ConvertCSTransformToBoneSpace(componentTransform, Output.Pose, bt, bi, BCS_BoneSpace);
+
+				MirrorTransform(at, target.MirrorAxis);
+				MirrorTransform(bt, target.MirrorAxis);
+
+				FAnimationRuntime::ConvertBoneSpaceTransformToCS(componentTransform, Output.Pose, bt, ai, BCS_BoneSpace);
+				FAnimationRuntime::ConvertBoneSpaceTransformToCS(componentTransform, Output.Pose, at, bi, BCS_BoneSpace);
+
+				OutBoneTransforms.Add(FBoneTransform(ai, bt));
+				OutBoneTransforms.Add(FBoneTransform(bi, at));
+			}
+			else
+			{
+				MirrorTransform(at, target.MirrorAxis);
+				FAnimationRuntime::ConvertBoneSpaceTransformToCS(componentTransform, Output.Pose, at, ai, BCS_BoneSpace);
+				OutBoneTransforms.Add(FBoneTransform(ai, at));
+			}
+		}
 	}
+
+	// for check in FCSPose<PoseType>::LocalBlendCSBoneTransforms
+	OutBoneTransforms.Sort(FCompareBoneTransformIndex());
 }
 
 
-
-
-void FAnimNode_Mirroring::_MirrorPose(FComponentSpacePoseContext& Output, const TArray<FTransform>& CurrentTransforms, const FMirrorInfoItem& Item)
+bool FAnimNode_Mirroring::IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones)
 {
-	if (Item.IndexA >= 0 && Item.IndexA >= 0) {
-		if (Item.IndexA != Item.IndexB) {
-			// Pair bone mirroring
-			FTransform btA = CurrentTransforms[Item.IndexA];
-			FTransform btB = CurrentTransforms[Item.IndexB];
-
-			btA.SetRotation(btA.GetRotation() * ComponentSpaceRefPose[Item.IndexA].GetRotation().Inverse());
-			btA.SetLocation(btA.GetLocation() - ComponentSpaceRefPose[Item.IndexA].GetLocation());
-			btB.SetRotation(btB.GetRotation() * ComponentSpaceRefPose[Item.IndexB].GetRotation().Inverse());
-			btB.SetLocation(btB.GetLocation() - ComponentSpaceRefPose[Item.IndexB].GetLocation());
-
-			FMirrorInfo::MirrorTransform(btA, Item.MirrorAxis);
-			FMirrorInfo::MirrorTransform(btB, Item.MirrorAxis);
-
-			Output.Pose.SetComponentSpaceTransform(FCompactPoseBoneIndex(Item.IndexA), FTransform(
-				btB.GetRotation() * ComponentSpaceRefPose[Item.IndexA].GetRotation(),
-				btB.GetTranslation() + ComponentSpaceRefPose[Item.IndexA].GetLocation(),
-				btB.GetScale3D()
-			));
-			Output.Pose.SetComponentSpaceTransform(FCompactPoseBoneIndex(Item.IndexB), FTransform(
-				btA.GetRotation() * ComponentSpaceRefPose[Item.IndexB].GetRotation(),
-				btA.GetTranslation() + ComponentSpaceRefPose[Item.IndexB].GetLocation(),
-				btA.GetScale3D()
-			));
-		}
-		else {
-			// Single bone mirroring
-			FTransform btA = CurrentTransforms[Item.IndexA];
-
-			btA.SetRotation(btA.GetRotation() * ComponentSpaceRefPose[Item.IndexA].GetRotation().Inverse());
-			btA.SetLocation(btA.GetLocation() - ComponentSpaceRefPose[Item.IndexA].GetLocation());
-
-			FMirrorInfo::MirrorTransform(btA, Item.MirrorAxis);
-
-			Output.Pose.SetComponentSpaceTransform(FCompactPoseBoneIndex(Item.IndexA), FTransform(
-				btA.GetRotation() * ComponentSpaceRefPose[Item.IndexA].GetRotation(),
-				btA.GetTranslation() + ComponentSpaceRefPose[Item.IndexA].GetLocation(),
-				btA.GetScale3D()
-			));
-		}
-	}
+	return MirroringEnable;
 }
