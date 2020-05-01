@@ -186,25 +186,27 @@ void FMirrorInfo::Initialize(const TArray<FMirrorMatchData>& OverrideMatches, co
 	}
 }
 
+namespace {
+	inline FQuat HadamardProduct(const FQuat& q, const FVector4& v)
+	{
+		return FQuat(q.X * v.X, q.Y * v.Y, q.Z * v.Z, q.W * v.W);
+	};
+}
 
 void FMirrorInfo::MirrorTransform(FTransform& Transform, EMirrorAxis MirrorAxis)
 {
-	auto _MirrorQuat = [](const FQuat& q, const FVector4& v) {
-		return FQuat(q.X * v.X, q.Y * v.Y, q.Z * v.Z, q.W * v.W);
-	};
-
 	switch (MirrorAxis) {
 	case EMirrorAxis::XAxis:
 		Transform.SetLocation(Transform.GetLocation() * FVector(-1.0f, 1.0f, 1.0f));
-		Transform.SetRotation(_MirrorQuat(Transform.GetRotation(), FVector4(-1.0f, 1.0f, 1.0f, -1.0f)));
+		Transform.SetRotation(HadamardProduct(Transform.GetRotation(), FVector4(1.0f, -1.0f, -1.0f, 1.0f)));
 		break;
 	case EMirrorAxis::YAxis:
 		Transform.SetLocation(Transform.GetLocation() * FVector(1.0f, -1.0f, 1.0f));
-		Transform.SetRotation(_MirrorQuat(Transform.GetRotation(), FVector4(1.0f, -1.0f, 1.0f, -1.0f)));
+		Transform.SetRotation(HadamardProduct(Transform.GetRotation(), FVector4(-1.0f, 1.0f, -1.0f, 1.0f)));
 		break;
 	case EMirrorAxis::ZAxis:
 		Transform.SetLocation(Transform.GetLocation() * FVector(1.0f, 1.0f, -1.0f));
-		Transform.SetRotation(_MirrorQuat(Transform.GetRotation(), FVector4(1.0f, 1.0f, -1.0f, -1.0f)));
+		Transform.SetRotation(HadamardProduct(Transform.GetRotation(), FVector4(-1.0f, -1.0f, 1.0f, 1.0f)));
 		break;
 	}
 }

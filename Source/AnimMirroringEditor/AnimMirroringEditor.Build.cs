@@ -16,6 +16,7 @@ public class AnimMirroringEditor : ModuleRules
 		PrivateIncludePaths.AddRange(
 			new string[] {
 				// ... add other private include paths required here ...
+				"AnimMirroring/Private"
 			}
 			);
 			

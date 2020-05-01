@@ -19,15 +19,15 @@ enum class EMirrorAxis : uint8
 UENUM(BlueprintType)
 enum class EMirroringNameRule : uint8
 {
-	//!< 常に不一致
+	// 常に不一致
 	Never,
-	//<! 常に一致
+	// 常に一致
 	Always,
-	//<! 完全一致
+	// 完全一致
 	ExactMatch,
-	//<! 前方一致
+	// 前方一致
 	HeadMatch,
-	//<! 後方一致
+	// 後方一致
 	TailMatch
 };
 
@@ -39,16 +39,20 @@ struct ANIMMIRRORING_API FMirrorMatchData
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EMirroringNameRule NameRule;	//!< ボーン名の指定規則
+	// ボーン名の指定規則
+	EMirroringNameRule NameRule;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString BoneName;	//!< 対象ボーンの名前
+	// 対象ボーンの名前
+	FString BoneName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString PairBoneName;	//!< ミラーリングする時の対になるボーンの名前(省略した場合は単独でミラーリングする)
+	// ミラーリングする時の対になるボーンの名前(省略した場合は単独でミラーリングする)
+	FString PairBoneName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EMirrorAxis MirrorAxis;	//!< ミラーリングの軸
+	// ミラーリングの軸
+	EMirrorAxis MirrorAxis;
 
 	FMirrorMatchData();
 	FMirrorMatchData(EMirroringNameRule InNameRule, const FString& InBoneName, EMirrorAxis InMirrorAxis);

@@ -3,18 +3,18 @@
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
 #include "AnimGraphNode_Base.h"
-#include "AnimNode_ComponentSpaceMirroring.h"
+#include "AnimNode_Mirroring.h"
 
-#include "AnimGraphNode_ComponentSpaceMirroring.generated.h"
+#include "AnimGraphNode_Mirroring.generated.h"
 
 
 // AnimGraphNode
 UCLASS(meta = (Keywords = "Mirror, Mirroring"))
-class ANIMMIRRORINGEDITOR_API UAnimGraphNode_ComponentSpaceMirroring : public UAnimGraphNode_Base
+class ANIMMIRRORINGEDITOR_API UAnimGraphNode_Mirroring : public UAnimGraphNode_Base
 {
 	GENERATED_UCLASS_BODY()
 	UPROPERTY(EditAnywhere, Category = Settings)
-	FAnimNode_ComponentSpaceMirroring Node;
+	FAnimNode_Mirroring Node;
 
 public:
 	// UEdGraphNode interface
@@ -27,5 +27,4 @@ public:
 
 protected:
 	virtual FString GetControllerDescription() const;	
-	
 };

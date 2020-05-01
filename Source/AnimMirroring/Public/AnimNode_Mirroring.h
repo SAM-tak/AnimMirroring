@@ -6,14 +6,16 @@
 #include "AnimMirroringData.h"
 #include "AnimMirroringInfo.h"
 
-#include "AnimNode_ComponentSpaceMirroring.generated.h"
+#include "AnimNode_Mirroring.generated.h"
 
 
 // Anim Behavior Node
 USTRUCT(BlueprintInternalUseOnly)
-struct ANIMMIRRORING_API FAnimNode_ComponentSpaceMirroring : public FAnimNode_Base
+struct ANIMMIRRORING_API FAnimNode_Mirroring : public FAnimNode_Base
 {
 	GENERATED_BODY()
+
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Links)
 	FComponentSpacePoseLink ComponentPose;
 
@@ -42,8 +44,8 @@ public:
 	// End of FAnimNode_Base interface
 
 public:
-	FAnimNode_ComponentSpaceMirroring();
+	FAnimNode_Mirroring();
 
 private:
-	void _MirrorComponentSpacePose(FComponentSpacePoseContext& Output, const TArray<FTransform>& CurrentTransforms, const FMirrorInfoItem& Item);
+	void _MirrorPose(FComponentSpacePoseContext& Output, const TArray<FTransform>& CurrentTransforms, const FMirrorInfoItem& Item);
 };

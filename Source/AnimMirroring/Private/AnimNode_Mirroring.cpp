@@ -1,10 +1,10 @@
-#include "AnimNode_ComponentSpaceMirroring.h"
+#include "AnimNode_Mirroring.h"
 #include "AnimMirroringLog.h"
 #include "AnimationRuntime.h"
 #include "Animation/AnimInstanceProxy.h"
 
 
-FAnimNode_ComponentSpaceMirroring::FAnimNode_ComponentSpaceMirroring()
+FAnimNode_Mirroring::FAnimNode_Mirroring()
 	: FAnimNode_Base()
 	, MirroringData(nullptr)
 	, MirroringEnable(true)
@@ -12,7 +12,7 @@ FAnimNode_ComponentSpaceMirroring::FAnimNode_ComponentSpaceMirroring()
 }
 
 
-void FAnimNode_ComponentSpaceMirroring::Initialize_AnyThread(const FAnimationInitializeContext & Context)
+void FAnimNode_Mirroring::Initialize_AnyThread(const FAnimationInitializeContext & Context)
 {
 	ComponentPose.Initialize(Context);
 
@@ -30,30 +30,28 @@ void FAnimNode_ComponentSpaceMirroring::Initialize_AnyThread(const FAnimationIni
 			FTransform parentPose = BoneContainer.GetRefPoseTransform(parentIndex);
 			bonePose = bonePose * parentPose;
 			parentIndex = BoneContainer.GetParentBoneIndex(parentIndex);
-
 		}
 		ComponentSpaceRefPose.Add(bonePose);
-
 	}
 
 	MirrorInfo.Initialize(OverrideMirrorMatches, MirroringData, BoneContainer);
 }
 
 
-void FAnimNode_ComponentSpaceMirroring::CacheBones_AnyThread(const FAnimationCacheBonesContext & Context)
+void FAnimNode_Mirroring::CacheBones_AnyThread(const FAnimationCacheBonesContext & Context)
 {
 	ComponentPose.CacheBones(Context);
 }
 
 
-void FAnimNode_ComponentSpaceMirroring::Update_AnyThread(const FAnimationUpdateContext & Context)
+void FAnimNode_Mirroring::Update_AnyThread(const FAnimationUpdateContext & Context)
 {
 	GetEvaluateGraphExposedInputs().Execute(Context);
 	ComponentPose.Update(Context);
 }
 
 
-void FAnimNode_ComponentSpaceMirroring::EvaluateComponentSpace_AnyThread(FComponentSpacePoseContext& Output)
+void FAnimNode_Mirroring::EvaluateComponentSpace_AnyThread(FComponentSpacePoseContext& Output)
 {
 	Output.ResetToRefPose();
 	ComponentPose.EvaluateComponentSpace(Output);
@@ -64,49 +62,64 @@ void FAnimNode_ComponentSpaceMirroring::EvaluateComponentSpace_AnyThread(FCompon
 	TArray<FTransform> CurrentTransforms;
 	CurrentTransforms.Reserve(Output.Pose.GetPose().GetNumBones());
 
-	// save current component space pose.
+	// GetComponentSpaceTransform returns different value after SetComponentSpaceTransform called in mirror process loop.
+	// Then, store all current component space poses before process.
 	// ループ中にSetComponentSpaceTransformを使うと、GetComponentSpaceTransformの戻ってくる値が更新されてしまうので
 	// 先にすべてのポーズを保管しておく。
 	for (int32 iBone = 0; iBone < Output.Pose.GetPose().GetNumBones(); iBone++) {
-		FCompactPoseBoneIndex boneIndex(iBone);
-		CurrentTransforms.Add(Output.Pose.GetComponentSpaceTransform(boneIndex));
+		CurrentTransforms.Add(Output.Pose.GetComponentSpaceTransform(FCompactPoseBoneIndex(iBone)));
 	}
 
 	// mirroring pose.
 	for (int32 iPair = 0; iPair < MirrorInfo.Items.Num(); iPair++) {
-		_MirrorComponentSpacePose(Output, CurrentTransforms, MirrorInfo.Items[iPair]);
+		_MirrorPose(Output, CurrentTransforms, MirrorInfo.Items[iPair]);
 	}
 }
 
 
-void FAnimNode_ComponentSpaceMirroring::_MirrorComponentSpacePose(FComponentSpacePoseContext& Output, const TArray<FTransform>& CurrentTransforms, const FMirrorInfoItem& Item)
-{
-	auto BoneIndexA = Item.IndexA;
-	auto BoneIndexB = Item.IndexB;
-	if (BoneIndexA >= 0 && BoneIndexB >= 0) {
-		if (BoneIndexA != BoneIndexB) {
-			// Pair bone mirroring
-			FTransform btA = CurrentTransforms[BoneIndexA];
-			FTransform btB = CurrentTransforms[BoneIndexB];
 
-			btA.SetRotation(btA.GetRotation() * ComponentSpaceRefPose[BoneIndexA].GetRotation().Inverse());
-			btB.SetRotation(btB.GetRotation() * ComponentSpaceRefPose[BoneIndexB].GetRotation().Inverse());
+
+void FAnimNode_Mirroring::_MirrorPose(FComponentSpacePoseContext& Output, const TArray<FTransform>& CurrentTransforms, const FMirrorInfoItem& Item)
+{
+	if (Item.IndexA >= 0 && Item.IndexA >= 0) {
+		if (Item.IndexA != Item.IndexB) {
+			// Pair bone mirroring
+			FTransform btA = CurrentTransforms[Item.IndexA];
+			FTransform btB = CurrentTransforms[Item.IndexB];
+
+			btA.SetRotation(btA.GetRotation() * ComponentSpaceRefPose[Item.IndexA].GetRotation().Inverse());
+			btA.SetLocation(btA.GetLocation() - ComponentSpaceRefPose[Item.IndexA].GetLocation());
+			btB.SetRotation(btB.GetRotation() * ComponentSpaceRefPose[Item.IndexB].GetRotation().Inverse());
+			btB.SetLocation(btB.GetLocation() - ComponentSpaceRefPose[Item.IndexB].GetLocation());
 
 			FMirrorInfo::MirrorTransform(btA, Item.MirrorAxis);
 			FMirrorInfo::MirrorTransform(btB, Item.MirrorAxis);
 
-			Output.Pose.SetComponentSpaceTransform(FCompactPoseBoneIndex(BoneIndexA), FTransform(btB.GetRotation() * ComponentSpaceRefPose[BoneIndexA].GetRotation(), btB.GetTranslation()));
-			Output.Pose.SetComponentSpaceTransform(FCompactPoseBoneIndex(BoneIndexB), FTransform(btA.GetRotation() * ComponentSpaceRefPose[BoneIndexB].GetRotation(), btA.GetTranslation()));
+			Output.Pose.SetComponentSpaceTransform(FCompactPoseBoneIndex(Item.IndexA), FTransform(
+				btB.GetRotation() * ComponentSpaceRefPose[Item.IndexA].GetRotation(),
+				btB.GetTranslation() + ComponentSpaceRefPose[Item.IndexA].GetLocation(),
+				btB.GetScale3D()
+			));
+			Output.Pose.SetComponentSpaceTransform(FCompactPoseBoneIndex(Item.IndexB), FTransform(
+				btA.GetRotation() * ComponentSpaceRefPose[Item.IndexB].GetRotation(),
+				btA.GetTranslation() + ComponentSpaceRefPose[Item.IndexB].GetLocation(),
+				btA.GetScale3D()
+			));
 		}
 		else {
-			// single bone mirroring
-			FTransform btA = CurrentTransforms[BoneIndexA];
+			// Single bone mirroring
+			FTransform btA = CurrentTransforms[Item.IndexA];
 
-			btA.SetRotation(btA.GetRotation() * ComponentSpaceRefPose[BoneIndexA].GetRotation().Inverse());
+			btA.SetRotation(btA.GetRotation() * ComponentSpaceRefPose[Item.IndexA].GetRotation().Inverse());
+			btA.SetLocation(btA.GetLocation() - ComponentSpaceRefPose[Item.IndexA].GetLocation());
 
 			FMirrorInfo::MirrorTransform(btA, Item.MirrorAxis);
 
-			Output.Pose.SetComponentSpaceTransform(FCompactPoseBoneIndex(BoneIndexA), FTransform(btA.GetRotation() * ComponentSpaceRefPose[BoneIndexA].GetRotation(), btA.GetTranslation()));
+			Output.Pose.SetComponentSpaceTransform(FCompactPoseBoneIndex(Item.IndexA), FTransform(
+				btA.GetRotation() * ComponentSpaceRefPose[Item.IndexA].GetRotation(),
+				btA.GetTranslation() + ComponentSpaceRefPose[Item.IndexA].GetLocation(),
+				btA.GetScale3D()
+			));
 		}
 	}
 }

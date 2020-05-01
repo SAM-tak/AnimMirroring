@@ -1,30 +1,31 @@
-#include "AnimGraphNode_ComponentSpaceMirroring.h"
+#include "AnimGraphNode_Mirroring.h"
 #include "AnimationGraphSchema.h"
 
 #define LOCTEXT_NAMESPACE "FAnimMirroringEditorModule"
 
-UAnimGraphNode_ComponentSpaceMirroring::UAnimGraphNode_ComponentSpaceMirroring(const FObjectInitializer& ObjectInitializer)
+UAnimGraphNode_Mirroring::UAnimGraphNode_Mirroring(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 }
 
 //Title Color!
-FLinearColor UAnimGraphNode_ComponentSpaceMirroring::GetNodeTitleColor() const
+FLinearColor UAnimGraphNode_Mirroring::GetNodeTitleColor() const
 {
 	return FLinearColor(1.f, .55f, 0.f);
 }
 
 //Node Category
-FString UAnimGraphNode_ComponentSpaceMirroring::GetNodeCategory() const
+FString UAnimGraphNode_Mirroring::GetNodeCategory() const
 {
 	return FString("AnimNode");
 }
-FString UAnimGraphNode_ComponentSpaceMirroring::GetControllerDescription() const
+
+FString UAnimGraphNode_Mirroring::GetControllerDescription() const
 {
-	return TEXT("ComponentSpaceMirroring");
+	return TEXT("Mirroring");
 }
 
-FText UAnimGraphNode_ComponentSpaceMirroring::GetNodeTitle(ENodeTitleType::Type TitleType) const
+FText UAnimGraphNode_Mirroring::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
 	FString Result = *GetControllerDescription();
 	return FText::FromString(Result);
@@ -32,13 +33,13 @@ FText UAnimGraphNode_ComponentSpaceMirroring::GetNodeTitle(ENodeTitleType::Type 
 
 
 //Node Tooltip
-FText UAnimGraphNode_ComponentSpaceMirroring::GetTooltipText() const
+FText UAnimGraphNode_Mirroring::GetTooltipText() const
 {
-	return LOCTEXT("AnimGraphNode_ComponentSpaceMirroring", "Mirroring pose.");
+	return LOCTEXT("AnimGraphNode_Mirroring", "Mirroring Pose.");
 }
 
 //Node Output Pin(Output is in Component Space, Change at own RISK!)
-void UAnimGraphNode_ComponentSpaceMirroring::CreateOutputPins()
+void UAnimGraphNode_Mirroring::CreateOutputPins()
 {
 	CreatePin(EGPD_Output, UAnimationGraphSchema::PC_Struct, FComponentSpacePoseLink::StaticStruct(), TEXT("Pose"));
 }
