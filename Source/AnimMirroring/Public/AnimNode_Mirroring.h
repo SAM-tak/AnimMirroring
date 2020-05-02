@@ -11,7 +11,7 @@ struct FBoneContainer;
 
 /** ミラーリング対象 */
 USTRUCT()
-struct FMirrorTarget
+struct FMirroringTarget
 {
 	GENERATED_BODY()
 
@@ -22,7 +22,7 @@ struct FMirrorTarget
 	FBoneReference CounterpartBoneRef;
 
 	UPROPERTY()
-	EMirrorAxis MirrorAxis;
+	EMirroringAxis MirrorAxis;
 };
 
 
@@ -32,22 +32,29 @@ struct ANIMMIRRORING_API FAnimNode_Mirroring : public FAnimNode_SkeletalControlB
 {
 	GENERATED_USTRUCT_BODY()
 
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	UAnimMirroringData* MirroringData;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
-	TArray<FMirrorMatchData> OverrideMirrorMatches;
+	TArray<FMirroringTargetDefine> OverrideMirroringData;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (PinHiddenByDefault))
 	bool MirroringEnable;
 
+	void Reset();
+
 protected:
-	TArray<FMirrorTarget> Targets;
+	TArray<FMirroringTarget> Targets;
+	void UpdateTargets(const FBoneContainer& RequiredBones);
+
+	TArray<FTransform> CSRefPoseTransforms;
+	void UpdateCSRefPoseTransforms(const FBoneContainer& RequiredBones);
 
 	// FAnimNode_SkeletalControlBase interface
 	virtual void EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms) override;
 	virtual bool IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones) override;
-	//virtual void InitializeBoneReferences(const FBoneContainer& RequiredBones) override;
+	virtual void InitializeBoneReferences(const FBoneContainer& RequiredBones) override;
 	// End of FAnimNode_SkeletalControlBase interface
 
 public:

@@ -1,45 +1,45 @@
 #include "AnimMirroringData.h"
 
 
-FMirrorMatchData::FMirrorMatchData()
-	: NameRule(EMirroringNameRule::ExactMatch)
+FMirroringTargetDefine::FMirroringTargetDefine()
+	: MatchMode(EMirroringMatchMode::ExactMatch)
 	, BoneName()
 	, CounterpartBoneName()
-	, MirrorAxis(EMirrorAxis::None)
+	, MirroringAxis(EMirroringAxis::None)
 {
 
 }
 
 
-FMirrorMatchData::FMirrorMatchData(EMirroringNameRule InNameRule, const FString& InBoneName, EMirrorAxis InMirrorAxis)
-	: NameRule(InNameRule)
+FMirroringTargetDefine::FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, EMirroringAxis InMirrorAxis)
+	: MatchMode(InNameRule)
 	, BoneName(InBoneName)
 	, CounterpartBoneName(InBoneName)
-	, MirrorAxis(InMirrorAxis)
+	, MirroringAxis(InMirrorAxis)
 {
 
 }
 
 
-FMirrorMatchData::FMirrorMatchData(EMirroringNameRule InNameRule, const FString& InBoneName, const FString& InCounterpartBoneName, EMirrorAxis InMirrorAxis)
-	: NameRule(InNameRule)
+FMirroringTargetDefine::FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, const FString& InCounterpartBoneName, EMirroringAxis InMirrorAxis)
+	: MatchMode(InNameRule)
 	, BoneName(InBoneName)
 	, CounterpartBoneName(InCounterpartBoneName)
-	, MirrorAxis(InMirrorAxis)
+	, MirroringAxis(InMirrorAxis)
 {
 
 }
 
 
-bool FMirrorMatchData::IsMatch(const FString& InBoneName)
+bool FMirroringTargetDefine::IsMatch(const FString& InBoneName)
 {
 	if(BoneName.IsEmpty()) return false;
 
-	if (NameRule == EMirroringNameRule::HeadMatch)
+	if (MatchMode == EMirroringMatchMode::HeadMatch)
 	{
 		return InBoneName.StartsWith(BoneName);
 	}
-	else if(NameRule == EMirroringNameRule::TailMatch)
+	else if(MatchMode == EMirroringMatchMode::TailMatch)
 	{
 		return InBoneName.EndsWith(BoneName);
 	}
@@ -50,15 +50,15 @@ bool FMirrorMatchData::IsMatch(const FString& InBoneName)
 }
 
 
-bool FMirrorMatchData::IsMatchAsCounterpart(const FString& InBoneName)
+bool FMirroringTargetDefine::IsMatchAsCounterpart(const FString& InBoneName)
 {
 	if(CounterpartBoneName.IsEmpty()) return false;
 
-	if (NameRule == EMirroringNameRule::HeadMatch)
+	if (MatchMode == EMirroringMatchMode::HeadMatch)
 	{
 		return InBoneName.StartsWith(CounterpartBoneName);
 	}
-	else if (NameRule == EMirroringNameRule::TailMatch)
+	else if (MatchMode == EMirroringMatchMode::TailMatch)
 	{
 		return InBoneName.EndsWith(CounterpartBoneName);
 	}
@@ -69,17 +69,17 @@ bool FMirrorMatchData::IsMatchAsCounterpart(const FString& InBoneName)
 }
 
 
-FString FMirrorMatchData::GetCounterpartBoneName(const FString& InBoneName)
+FString FMirroringTargetDefine::GetCounterpartBoneName(const FString& InBoneName)
 {
-	if (NameRule == EMirroringNameRule::HeadMatch)
+	if (MatchMode == EMirroringMatchMode::HeadMatch)
 	{
 		return CounterpartBoneName + InBoneName.RightChop(BoneName.Len());
 	}
-	else if (NameRule == EMirroringNameRule::TailMatch)
+	else if (MatchMode == EMirroringMatchMode::TailMatch)
 	{
 		return InBoneName.LeftChop(BoneName.Len()) + CounterpartBoneName;
 	}
-	else if (NameRule == EMirroringNameRule::ExactMatch)
+	else if (MatchMode == EMirroringMatchMode::ExactMatch)
 	{
 		return CounterpartBoneName;
 	}
@@ -88,17 +88,17 @@ FString FMirrorMatchData::GetCounterpartBoneName(const FString& InBoneName)
 }
 
 
-FString FMirrorMatchData::GetCounterCounterpartBoneName(const FString& InBoneName)
+FString FMirroringTargetDefine::GetCounterCounterpartBoneName(const FString& InBoneName)
 {
-	if (NameRule == EMirroringNameRule::HeadMatch)
+	if (MatchMode == EMirroringMatchMode::HeadMatch)
 	{
 		return BoneName + InBoneName.RightChop(CounterpartBoneName.Len());
 	}
-	else if (NameRule == EMirroringNameRule::TailMatch)
+	else if (MatchMode == EMirroringMatchMode::TailMatch)
 	{
 		return InBoneName.LeftChop(CounterpartBoneName.Len()) + BoneName;
 	}
-	else if (NameRule == EMirroringNameRule::ExactMatch)
+	else if (MatchMode == EMirroringMatchMode::ExactMatch)
 	{
 		return BoneName;
 	}
@@ -107,36 +107,43 @@ FString FMirrorMatchData::GetCounterCounterpartBoneName(const FString& InBoneNam
 }
 
 
-EMirrorAxis FMirrorMatchData::FindMirrorAxis(const TArray<FMirrorMatchData>& MirrorMatches, const FString& InBoneName, FString& OutCounterpartBoneName)
+bool FMirroringTargetDefine::FindMirroringAxis(const TArray<FMirroringTargetDefine>& MirrorMatches, const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName)
 {
 	for (auto i : MirrorMatches)
 	{
 		if (i.IsMatch(InBoneName))
 		{
 			OutCounterpartBoneName = i.GetCounterpartBoneName(InBoneName);
-			return i.MirrorAxis;
+			OutMirroringAxis = i.MirroringAxis;
+			return true;
 		}
 		else if (i.IsMatchAsCounterpart(InBoneName))
 		{
 			OutCounterpartBoneName = i.GetCounterCounterpartBoneName(InBoneName);
-			return i.MirrorAxis;
+			OutMirroringAxis = i.MirroringAxis;
+			return true;
 		}
 	}
 	OutCounterpartBoneName = "";
-	return EMirrorAxis::None;
+	OutMirroringAxis = EMirroringAxis::None;
+	return false;
 }
 
 
-EMirrorAxis UAnimMirroringData::FindMirrorAxis(const FString& InBoneName, FString& OutCounterpartBoneName)
+bool UAnimMirroringData::FindMirroringAxis(const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName)
 {
-	auto retval = FMirrorMatchData::FindMirrorAxis(MirrorMatches, InBoneName, OutCounterpartBoneName);
-	return retval == EMirrorAxis::None ? DefaultMirrorAxis : retval;
+	if(FMirroringTargetDefine::FindMirroringAxis(MirroringTargetDefines, InBoneName, OutMirroringAxis, OutCounterpartBoneName)) return true;
+	else
+	{
+		OutMirroringAxis = DefaultMirroringAxis;
+		return false;
+	}
 }
 
 
 UAnimMirroringData::UAnimMirroringData(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, DefaultMirrorAxis(EMirrorAxis::None)
+	, DefaultMirroringAxis(EMirroringAxis::None)
 {
 
 }

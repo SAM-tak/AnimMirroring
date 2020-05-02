@@ -29,8 +29,8 @@ UObject* UAnimMirroringDataFactory::FactoryCreateNew(UClass* InClass, UObject* I
 		return nullptr;
 	}
 
-	MirroringData->DefaultMirrorAxis = EMirrorAxis::XAxis;
-	MirroringData->MirrorMatches.Add(FMirrorMatchData(EMirroringNameRule::TailMatch, FString("_l"), FString("_r"), EMirrorAxis::XAxis));
+	MirroringData->DefaultMirroringAxis = EMirroringAxis::XAxis;
+	MirroringData->MirroringTargetDefines.Add(FMirroringTargetDefine(EMirroringMatchMode::TailMatch, FString("_l"), FString("_r"), EMirroringAxis::XAxis));
 
 	return MirroringData;
 }

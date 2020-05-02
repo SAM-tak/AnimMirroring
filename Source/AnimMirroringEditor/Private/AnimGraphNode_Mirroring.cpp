@@ -8,29 +8,10 @@ UAnimGraphNode_Mirroring::UAnimGraphNode_Mirroring(const FObjectInitializer& Obj
 {
 }
 
-//Title Color!
-FLinearColor UAnimGraphNode_Mirroring::GetNodeTitleColor() const
-{
-	return FLinearColor(1.f, .55f, 0.f);
-}
-
-//Node Category
-FString UAnimGraphNode_Mirroring::GetNodeCategory() const
-{
-	return FString("AnimNode");
-}
-
-FString UAnimGraphNode_Mirroring::GetControllerDescription() const
-{
-	return TEXT("Mirroring");
-}
-
 FText UAnimGraphNode_Mirroring::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
-	FString Result = *GetControllerDescription();
-	return FText::FromString(Result);
+	return GetControllerDescription();
 }
-
 
 //Node Tooltip
 FText UAnimGraphNode_Mirroring::GetTooltipText() const
@@ -38,10 +19,22 @@ FText UAnimGraphNode_Mirroring::GetTooltipText() const
 	return LOCTEXT("AnimGraphNode_Mirroring", "Mirroring Pose.");
 }
 
-//Node Output Pin(Output is in Component Space, Change at own RISK!)
-void UAnimGraphNode_Mirroring::CreateOutputPins()
+FText UAnimGraphNode_Mirroring::GetControllerDescription() const
 {
-	CreatePin(EGPD_Output, UAnimationGraphSchema::PC_Struct, FComponentSpacePoseLink::StaticStruct(), TEXT("Pose"));
+	return LOCTEXT("Mirroring", "Mirroring");
+}
+
+FEditorModeID UAnimGraphNode_Mirroring::GetEditorMode() const
+{
+	return "AnimGraph.SkeletalControl.Mirroring";
+}
+
+void UAnimGraphNode_Mirroring::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	Node.Reset();
+	ReconstructNode();
 }
 
 #undef LOCTEXT_NAMESPACE

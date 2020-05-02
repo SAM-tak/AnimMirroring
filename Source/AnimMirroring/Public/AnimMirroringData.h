@@ -6,7 +6,7 @@
 
 /** ミラーリングの軸 */
 UENUM(BlueprintType)
-enum class EMirrorAxis : uint8
+enum class EMirroringAxis : uint8
 {
 	// ミラーリングしない
 	None,
@@ -21,7 +21,7 @@ enum class EMirrorAxis : uint8
 
 /** ボーン名の指定規則 */
 UENUM(BlueprintType)
-enum class EMirroringNameRule : uint8
+enum class EMirroringMatchMode : uint8
 {
 	// 完全一致
 	ExactMatch,
@@ -34,13 +34,13 @@ enum class EMirroringNameRule : uint8
 
 /** ミラーリングするポーン情報 */
 USTRUCT(BlueprintType)
-struct ANIMMIRRORING_API FMirrorMatchData
+struct ANIMMIRRORING_API FMirroringTargetDefine
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	// ボーン名の指定規則
-	EMirroringNameRule NameRule;
+	EMirroringMatchMode MatchMode;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	// 対象ボーンの名前
@@ -52,18 +52,18 @@ struct ANIMMIRRORING_API FMirrorMatchData
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	// ミラーリングの軸
-	EMirrorAxis MirrorAxis;
+	EMirroringAxis MirroringAxis;
 
-	FMirrorMatchData();
-	FMirrorMatchData(EMirroringNameRule InNameRule, const FString& InBoneName, EMirrorAxis InMirrorAxis);
-	FMirrorMatchData(EMirroringNameRule InNameRule, const FString& InBoneName, const FString& InCounterpartBoneName, EMirrorAxis InMirrorAxis);
+	FMirroringTargetDefine();
+	FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, EMirroringAxis InMirrorAxis);
+	FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, const FString& InCounterpartBoneName, EMirroringAxis InMirrorAxis);
 
 	bool IsMatch(const FString& InBoneName);
 	bool IsMatchAsCounterpart(const FString& InBoneName);
 	FString GetCounterpartBoneName(const FString& BoneName);
 	FString GetCounterCounterpartBoneName(const FString& BoneName);
 
-	static EMirrorAxis FindMirrorAxis(const TArray<FMirrorMatchData>& MirrorMatches, const FString& InBoneName, FString& OutCounterpartBoneName);
+	static bool FindMirroringAxis(const TArray<FMirroringTargetDefine>& MirroringTargetDef, const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName);
 };
 
 
@@ -77,10 +77,10 @@ public:
 	UAnimMirroringData(const FObjectInitializer& ObjectInitializer);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EMirrorAxis DefaultMirrorAxis;
+	EMirroringAxis DefaultMirroringAxis;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FMirrorMatchData> MirrorMatches;
+	TArray<FMirroringTargetDefine> MirroringTargetDefines;
 
-	EMirrorAxis FindMirrorAxis(const FString& InBoneName, FString& OutCounterpartBoneName);
+	bool FindMirroringAxis(const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName);
 };
