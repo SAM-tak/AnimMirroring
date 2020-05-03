@@ -46,8 +46,6 @@ void FAnimNode_Mirroring::Initialize_AnyThread(const FAnimationInitializeContext
 
 	UpdateTargets(boneContainer);
 
-	UpdateCSRefPoseTransforms(boneContainer);
-
 	InitializeBoneReferences(boneContainer);
 }
 
@@ -67,8 +65,6 @@ void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(FComponentSpacePoseC
 	FTransform componentTransform = Output.AnimInstanceProxy->GetComponentTransform();
 	const FBoneContainer& boneContainer = Output.Pose.GetPose().GetBoneContainer();
 
-	if(CSRefPoseTransforms.Num() == 0) UpdateCSRefPoseTransforms(boneContainer);
-
 	if(Targets.Num() == 0
 		&& (OverrideMirroringData.Num() > 0
 			|| (MirroringData && (MirroringData->MirroringTargetDefines.Num() > 0 || MirroringData->DefaultMirroringAxis != EMirroringAxis::None))))
@@ -84,13 +80,13 @@ void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(FComponentSpacePoseC
 		if (target.BoneRef.IsValidToEvaluate())
 		{
 			auto ai = target.BoneRef.GetCompactPoseIndex(boneContainer);
-			auto apt = CSRefPoseTransforms[ai.GetInt()];
+			auto apt = target.CSRefPose;
 			auto at = Output.Pose.GetComponentSpaceTransform(ai);
 
 			if (target.CounterpartBoneRef.IsValidToEvaluate())
 			{
 				auto bi = target.CounterpartBoneRef.GetCompactPoseIndex(boneContainer);
-				auto bpt = CSRefPoseTransforms[bi.GetInt()];
+				auto bpt = target.CounterpartCSRefPose;
 				auto bt = Output.Pose.GetComponentSpaceTransform(bi);
 
 				at.SetRotation(at.GetRotation() * apt.GetRotation().Inverse());
@@ -147,37 +143,14 @@ void FAnimNode_Mirroring::InitializeBoneReferences(const FBoneContainer& Require
 	}
 }
 
-void FAnimNode_Mirroring::UpdateCSRefPoseTransforms(const FBoneContainer& RequiredBones)
-{
-	CSRefPoseTransforms.Reset();
-	CSRefPoseTransforms.Reserve(RequiredBones.GetCompactPoseNumBones());
-
-	for (int32 iBone = 0; iBone < RequiredBones.GetCompactPoseNumBones(); iBone++)
-	{
-		FCompactPoseBoneIndex boneIndex(iBone);
-		FTransform bonePose = RequiredBones.GetRefPoseTransform(boneIndex);
-		FCompactPoseBoneIndex parentIndex = RequiredBones.GetParentBoneIndex(boneIndex);
-
-		while (parentIndex.GetInt() != INDEX_NONE)
-		{
-			FTransform parentPose = RequiredBones.GetRefPoseTransform(parentIndex);
-			bonePose = bonePose * parentPose;
-			parentIndex = RequiredBones.GetParentBoneIndex(parentIndex);
-		}
-		CSRefPoseTransforms.Add(bonePose);
-	}
-}
-
 void FAnimNode_Mirroring::Reset()
 {
 	Targets.Reset();
-	CSRefPoseTransforms.Reset();
 }
 
 void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 {
 	Targets.Reset();
-	Targets.Reserve(RequiredBones.GetNumBones());
 
 	if (OverrideMirroringData.Num() > 0 || (MirroringData && (MirroringData->MirroringTargetDefines.Num() > 0 || MirroringData->DefaultMirroringAxis != EMirroringAxis::None)))
 	{
@@ -211,12 +184,35 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 
 				target.BoneRef.BoneName = boneName;
 
+				FTransform bonePose = RequiredBones.GetRefPoseTransform(FCompactPoseBoneIndex(i));
+				FCompactPoseBoneIndex parentIndex = RequiredBones.GetParentBoneIndex(FCompactPoseBoneIndex(i));
+
+				while(parentIndex.GetInt() != INDEX_NONE) {
+					FTransform parentPose = RequiredBones.GetRefPoseTransform(parentIndex);
+					bonePose = bonePose * parentPose;
+					parentIndex = RequiredBones.GetParentBoneIndex(parentIndex);
+				}
+
+				target.CSRefPose = bonePose;
+
 				if (!counterpartBoneNameString.IsEmpty())
 				{
 					FName counterpartBoneName(*counterpartBoneNameString);
-					if (RequiredBones.GetPoseBoneIndexForBoneName(counterpartBoneName) >= 0)
+					auto j = RequiredBones.GetPoseBoneIndexForBoneName(counterpartBoneName);
+					if (j >= 0)
 					{
 						target.CounterpartBoneRef.BoneName = counterpartBoneName;
+
+						bonePose = RequiredBones.GetRefPoseTransform(FCompactPoseBoneIndex(j));
+						parentIndex = RequiredBones.GetParentBoneIndex(FCompactPoseBoneIndex(j));
+
+						while(parentIndex.GetInt() != INDEX_NONE) {
+							FTransform parentPose = RequiredBones.GetRefPoseTransform(parentIndex);
+							bonePose = bonePose * parentPose;
+							parentIndex = RequiredBones.GetParentBoneIndex(parentIndex);
+						}
+
+						target.CounterpartCSRefPose = bonePose;
 					}
 				}
 				Targets.Add(target);

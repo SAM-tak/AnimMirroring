@@ -23,6 +23,12 @@ struct FMirroringTarget
 
 	UPROPERTY()
 	EMirroringAxis MirrorAxis;
+
+	UPROPERTY()
+	FTransform CSRefPose;
+
+	UPROPERTY()
+	FTransform CounterpartCSRefPose;
 };
 
 
@@ -47,9 +53,6 @@ public:
 protected:
 	TArray<FMirroringTarget> Targets;
 	void UpdateTargets(const FBoneContainer& RequiredBones);
-
-	TArray<FTransform> CSRefPoseTransforms;
-	void UpdateCSRefPoseTransforms(const FBoneContainer& RequiredBones);
 
 	// FAnimNode_SkeletalControlBase interface
 	virtual void EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms) override;
