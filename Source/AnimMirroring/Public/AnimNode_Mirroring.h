@@ -31,7 +31,6 @@ struct FMirroringTarget
 	FTransform CounterpartCSRefPose;
 };
 
-
 // Anim Behavior Node
 USTRUCT(BlueprintInternalUseOnly)
 struct ANIMMIRRORING_API FAnimNode_Mirroring : public FAnimNode_SkeletalControlBase
@@ -55,16 +54,17 @@ protected:
 	void UpdateTargets(const FBoneContainer& RequiredBones);
 
 	// FAnimNode_SkeletalControlBase interface
-	virtual void EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms) override;
+	virtual void EvaluateSkeletalControl_AnyThread(
+		FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms) override;
 	virtual bool IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones) override;
 	virtual void InitializeBoneReferences(const FBoneContainer& RequiredBones) override;
 	// End of FAnimNode_SkeletalControlBase interface
 
 public:
 	// FAnimNode_Base interface
-	//virtual void GatherDebugData(FNodeDebugData& DebugData) override;
+	// virtual void GatherDebugData(FNodeDebugData& DebugData) override;
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
-	//virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
+	// virtual void CacheBones_AnyThread(const FAnimationCacheBonesContext& Context) override;
 	// End of FAnimNode_Base interface
 
 	FAnimNode_Mirroring();

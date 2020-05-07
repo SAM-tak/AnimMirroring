@@ -1,45 +1,32 @@
 #include "AnimMirroringData.h"
 
-
 FMirroringTargetDefine::FMirroringTargetDefine()
-	: MatchMode(EMirroringMatchMode::ExactMatch)
-	, BoneName()
-	, CounterpartBoneName()
-	, MirroringAxis(EMirroringAxis::None)
+	: MatchMode(EMirroringMatchMode::ExactMatch), BoneName(), CounterpartBoneName(), MirroringAxis(EMirroringAxis::None)
 {
-
 }
 
-
-FMirroringTargetDefine::FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, EMirroringAxis InMirrorAxis)
-	: MatchMode(InNameRule)
-	, BoneName(InBoneName)
-	, CounterpartBoneName(InBoneName)
-	, MirroringAxis(InMirrorAxis)
+FMirroringTargetDefine::FMirroringTargetDefine(
+	EMirroringMatchMode InNameRule, const FString& InBoneName, EMirroringAxis InMirrorAxis)
+	: MatchMode(InNameRule), BoneName(InBoneName), CounterpartBoneName(InBoneName), MirroringAxis(InMirrorAxis)
 {
-
 }
 
-
-FMirroringTargetDefine::FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, const FString& InCounterpartBoneName, EMirroringAxis InMirrorAxis)
-	: MatchMode(InNameRule)
-	, BoneName(InBoneName)
-	, CounterpartBoneName(InCounterpartBoneName)
-	, MirroringAxis(InMirrorAxis)
+FMirroringTargetDefine::FMirroringTargetDefine(
+	EMirroringMatchMode InNameRule, const FString& InBoneName, const FString& InCounterpartBoneName, EMirroringAxis InMirrorAxis)
+	: MatchMode(InNameRule), BoneName(InBoneName), CounterpartBoneName(InCounterpartBoneName), MirroringAxis(InMirrorAxis)
 {
-
 }
-
 
 bool FMirroringTargetDefine::IsMatch(const FString& InBoneName)
 {
-	if(BoneName.IsEmpty()) return false;
+	if (BoneName.IsEmpty())
+		return false;
 
 	if (MatchMode == EMirroringMatchMode::HeadMatch)
 	{
 		return InBoneName.StartsWith(BoneName);
 	}
-	else if(MatchMode == EMirroringMatchMode::TailMatch)
+	else if (MatchMode == EMirroringMatchMode::TailMatch)
 	{
 		return InBoneName.EndsWith(BoneName);
 	}
@@ -49,10 +36,10 @@ bool FMirroringTargetDefine::IsMatch(const FString& InBoneName)
 	}
 }
 
-
 bool FMirroringTargetDefine::IsMatchAsCounterpart(const FString& InBoneName)
 {
-	if(CounterpartBoneName.IsEmpty()) return false;
+	if (CounterpartBoneName.IsEmpty())
+		return false;
 
 	if (MatchMode == EMirroringMatchMode::HeadMatch)
 	{
@@ -67,7 +54,6 @@ bool FMirroringTargetDefine::IsMatchAsCounterpart(const FString& InBoneName)
 		return InBoneName.Compare(CounterpartBoneName, ESearchCase::IgnoreCase) == 0;
 	}
 }
-
 
 FString FMirroringTargetDefine::GetCounterpartBoneName(const FString& InBoneName)
 {
@@ -87,7 +73,6 @@ FString FMirroringTargetDefine::GetCounterpartBoneName(const FString& InBoneName
 	return "";
 }
 
-
 FString FMirroringTargetDefine::GetCounterCounterpartBoneName(const FString& InBoneName)
 {
 	if (MatchMode == EMirroringMatchMode::HeadMatch)
@@ -106,8 +91,8 @@ FString FMirroringTargetDefine::GetCounterCounterpartBoneName(const FString& InB
 	return "";
 }
 
-
-bool FMirroringTargetDefine::FindMirroringAxis(const TArray<FMirroringTargetDefine>& MirrorMatches, const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName)
+bool FMirroringTargetDefine::FindMirroringAxis(const TArray<FMirroringTargetDefine>& MirrorMatches, const FString& InBoneName,
+	EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName)
 {
 	for (auto i : MirrorMatches)
 	{
@@ -129,10 +114,11 @@ bool FMirroringTargetDefine::FindMirroringAxis(const TArray<FMirroringTargetDefi
 	return false;
 }
 
-
-bool UAnimMirroringData::FindMirroringAxis(const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName)
+bool UAnimMirroringData::FindMirroringAxis(
+	const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName)
 {
-	if(FMirroringTargetDefine::FindMirroringAxis(MirroringTargetDefines, InBoneName, OutMirroringAxis, OutCounterpartBoneName)) return true;
+	if (FMirroringTargetDefine::FindMirroringAxis(MirroringTargetDefines, InBoneName, OutMirroringAxis, OutCounterpartBoneName))
+		return true;
 	else
 	{
 		OutMirroringAxis = DefaultMirroringAxis;
@@ -140,10 +126,7 @@ bool UAnimMirroringData::FindMirroringAxis(const FString& InBoneName, EMirroring
 	}
 }
 
-
 UAnimMirroringData::UAnimMirroringData(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
-	, DefaultMirroringAxis(EMirroringAxis::None)
+	: Super(ObjectInitializer), DefaultMirroringAxis(EMirroringAxis::None)
 {
-
 }

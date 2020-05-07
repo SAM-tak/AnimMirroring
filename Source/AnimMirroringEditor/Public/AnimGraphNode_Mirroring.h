@@ -7,7 +7,6 @@
 #include "EdGraph/EdGraphNodeUtils.h"
 #include "AnimGraphNode_Mirroring.generated.h"
 
-
 // AnimGraphNode
 UCLASS(meta = (Keywords = "Mirror, Mirroring"))
 class ANIMMIRRORINGEDITOR_API UAnimGraphNode_Mirroring : public UAnimGraphNode_SkeletalControlBase
@@ -32,6 +31,9 @@ protected:
 
 	// UAnimGraphNode_SkeletalControlBase interface
 	virtual FText GetControllerDescription() const override;
-	virtual const FAnimNode_SkeletalControlBase* GetNode() const override { return &Node; }
+	virtual const FAnimNode_SkeletalControlBase* GetNode() const override
+	{
+		return &Node;
+	}
 	// End of UAnimGraphNode_SkeletalControlBase interface
 };

@@ -3,8 +3,7 @@
 
 #define LOCTEXT_NAMESPACE "FAnimMirroringEditorModule"
 
-UAnimGraphNode_Mirroring::UAnimGraphNode_Mirroring(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UAnimGraphNode_Mirroring::UAnimGraphNode_Mirroring(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 }
 
@@ -13,7 +12,7 @@ FText UAnimGraphNode_Mirroring::GetNodeTitle(ENodeTitleType::Type TitleType) con
 	return GetControllerDescription();
 }
 
-//Node Tooltip
+// Node Tooltip
 FText UAnimGraphNode_Mirroring::GetTooltipText() const
 {
 	return LOCTEXT("AnimGraphNode_Mirroring", "Mirroring Pose.");

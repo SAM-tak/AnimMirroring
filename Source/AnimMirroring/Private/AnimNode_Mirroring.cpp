@@ -3,16 +3,17 @@
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimationAsset.h"
 
+namespace
+{
+inline FQuat HadamardProduct(const FQuat& q, const FVector4& v)
+{
+	return FQuat(q.X * v.X, q.Y * v.Y, q.Z * v.Z, q.W * v.W);
+};
 
-namespace {
-	inline FQuat HadamardProduct(const FQuat& q, const FVector4& v)
+inline void MirrorTransform(FTransform& InOutTransform, EMirroringAxis MirroringAxis)
+{
+	switch (MirroringAxis)
 	{
-		return FQuat(q.X * v.X, q.Y * v.Y, q.Z * v.Z, q.W * v.W);
-	};
-
-	inline void MirrorTransform(FTransform& InOutTransform, EMirroringAxis MirroringAxis)
-	{
-		switch(MirroringAxis) {
 		case EMirroringAxis::XAxis:
 			InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(-1.0f, 1.0f, 1.0f));
 			InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(1.0f, -1.0f, -1.0f, 1.0f)));
@@ -25,18 +26,13 @@ namespace {
 			InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(1.0f, 1.0f, -1.0f));
 			InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(-1.0f, -1.0f, 1.0f, 1.0f)));
 			break;
-		}
 	}
 }
+} // anonymous namespace
 
-
-FAnimNode_Mirroring::FAnimNode_Mirroring()
-	: FAnimNode_SkeletalControlBase()
-	, MirroringData(nullptr)
-	, MirroringEnable(true)
+FAnimNode_Mirroring::FAnimNode_Mirroring() : FAnimNode_SkeletalControlBase(), MirroringData(nullptr), MirroringEnable(true)
 {
 }
-
 
 void FAnimNode_Mirroring::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
@@ -51,7 +47,8 @@ void FAnimNode_Mirroring::Initialize_AnyThread(const FAnimationInitializeContext
 
 DECLARE_CYCLE_STAT(TEXT("AnimNode_Mirroring_Eval"), STAT_AnimNode_Mirroring_Eval, STATGROUP_Anim);
 
-void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms)
+void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(
+	FComponentSpacePoseContext& Output, TArray<FBoneTransform>& OutBoneTransforms)
 {
 	SCOPE_CYCLE_COUNTER(STAT_AnimNode_Mirroring_Eval);
 
@@ -65,14 +62,15 @@ void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(FComponentSpacePoseC
 	FTransform componentTransform = Output.AnimInstanceProxy->GetComponentTransform();
 	const FBoneContainer& boneContainer = Output.Pose.GetPose().GetBoneContainer();
 
-	if(Targets.Num() == 0
-		&& (OverrideMirroringData.Num() > 0
-			|| (MirroringData && (MirroringData->MirroringTargetDefines.Num() > 0 || MirroringData->DefaultMirroringAxis != EMirroringAxis::None))))
+	if (Targets.Num() == 0 &&
+		(OverrideMirroringData.Num() > 0 || (MirroringData && (MirroringData->MirroringTargetDefines.Num() > 0 ||
+																  MirroringData->DefaultMirroringAxis != EMirroringAxis::None))))
 	{
 		UpdateTargets(boneContainer);
 	}
 
-	if (Targets.Num() > 0 && !Targets[0].BoneRef.IsValidToEvaluate()) InitializeBoneReferences(boneContainer);
+	if (Targets.Num() > 0 && !Targets[0].BoneRef.IsValidToEvaluate())
+		InitializeBoneReferences(boneContainer);
 
 	// mirroring pose.
 	for (auto& target : Targets)
@@ -111,7 +109,7 @@ void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(FComponentSpacePoseC
 				at.SetLocation(at.GetLocation() - apt.GetLocation());
 
 				MirrorTransform(at, target.MirrorAxis);
-				
+
 				at.SetRotation(at.GetRotation() * apt.GetRotation());
 				at.SetLocation(at.GetLocation() + apt.GetLocation());
 
@@ -124,12 +122,10 @@ void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(FComponentSpacePoseC
 	OutBoneTransforms.Sort(FCompareBoneTransformIndex());
 }
 
-
 bool FAnimNode_Mirroring::IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones)
 {
 	return MirroringEnable;
 }
-
 
 void FAnimNode_Mirroring::InitializeBoneReferences(const FBoneContainer& RequiredBones)
 {
@@ -152,7 +148,8 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 {
 	Targets.Reset();
 
-	if (OverrideMirroringData.Num() > 0 || (MirroringData && (MirroringData->MirroringTargetDefines.Num() > 0 || MirroringData->DefaultMirroringAxis != EMirroringAxis::None)))
+	if (OverrideMirroringData.Num() > 0 || (MirroringData && (MirroringData->MirroringTargetDefines.Num() > 0 ||
+																 MirroringData->DefaultMirroringAxis != EMirroringAxis::None)))
 	{
 		for (int i = 0; i < RequiredBones.GetCompactPoseNumBones(); i++)
 		{
@@ -167,12 +164,15 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 
 			for (auto& j : Targets)
 			{
-				if(j.BoneRef.BoneName == boneName || (j.CounterpartBoneRef.BoneName.IsNone() && j.CounterpartBoneRef.BoneName == boneName)) continue;
+				if (j.BoneRef.BoneName == boneName ||
+					(j.CounterpartBoneRef.BoneName.IsNone() && j.CounterpartBoneRef.BoneName == boneName))
+					continue;
 			}
 
 			FString counterpartBoneNameString;
 			EMirroringAxis mirroringAxis;
-			if(!FMirroringTargetDefine::FindMirroringAxis(OverrideMirroringData, boneName.ToString(), mirroringAxis, counterpartBoneNameString))
+			if (!FMirroringTargetDefine::FindMirroringAxis(
+					OverrideMirroringData, boneName.ToString(), mirroringAxis, counterpartBoneNameString))
 			{
 				MirroringData->FindMirroringAxis(boneName.ToString(), mirroringAxis, counterpartBoneNameString);
 			}
@@ -187,7 +187,8 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 				FTransform bonePose = RequiredBones.GetRefPoseTransform(FCompactPoseBoneIndex(i));
 				FCompactPoseBoneIndex parentIndex = RequiredBones.GetParentBoneIndex(FCompactPoseBoneIndex(i));
 
-				while(parentIndex.GetInt() != INDEX_NONE) {
+				while (parentIndex.GetInt() != INDEX_NONE)
+				{
 					FTransform parentPose = RequiredBones.GetRefPoseTransform(parentIndex);
 					bonePose = bonePose * parentPose;
 					parentIndex = RequiredBones.GetParentBoneIndex(parentIndex);
@@ -206,7 +207,8 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 						bonePose = RequiredBones.GetRefPoseTransform(FCompactPoseBoneIndex(j));
 						parentIndex = RequiredBones.GetParentBoneIndex(FCompactPoseBoneIndex(j));
 
-						while(parentIndex.GetInt() != INDEX_NONE) {
+						while (parentIndex.GetInt() != INDEX_NONE)
+						{
 							FTransform parentPose = RequiredBones.GetRefPoseTransform(parentIndex);
 							bonePose = bonePose * parentPose;
 							parentIndex = RequiredBones.GetParentBoneIndex(parentIndex);

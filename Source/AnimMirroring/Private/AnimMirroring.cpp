@@ -17,5 +17,5 @@ void FAnimMirroringModule::ShutdownModule()
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+
 IMPLEMENT_MODULE(FAnimMirroringModule, AnimMirroring)

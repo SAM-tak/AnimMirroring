@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "AnimMirroringData.generated.h"
 
-
 /** ミラーリングの軸 */
 UENUM(BlueprintType)
 enum class EMirroringAxis : uint8
@@ -18,7 +17,6 @@ enum class EMirroringAxis : uint8
 	ZAxis,
 };
 
-
 /** ボーン名の指定規則 */
 UENUM(BlueprintType)
 enum class EMirroringMatchMode : uint8
@@ -30,7 +28,6 @@ enum class EMirroringMatchMode : uint8
 	// 後方一致
 	TailMatch
 };
-
 
 /** ミラーリングするポーン情報 */
 USTRUCT(BlueprintType)
@@ -56,16 +53,17 @@ struct ANIMMIRRORING_API FMirroringTargetDefine
 
 	FMirroringTargetDefine();
 	FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, EMirroringAxis InMirrorAxis);
-	FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, const FString& InCounterpartBoneName, EMirroringAxis InMirrorAxis);
+	FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, const FString& InCounterpartBoneName,
+		EMirroringAxis InMirrorAxis);
 
 	bool IsMatch(const FString& InBoneName);
 	bool IsMatchAsCounterpart(const FString& InBoneName);
 	FString GetCounterpartBoneName(const FString& BoneName);
 	FString GetCounterCounterpartBoneName(const FString& BoneName);
 
-	static bool FindMirroringAxis(const TArray<FMirroringTargetDefine>& MirroringTargetDef, const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName);
+	static bool FindMirroringAxis(const TArray<FMirroringTargetDefine>& MirroringTargetDef, const FString& InBoneName,
+		EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName);
 };
-
 
 /** ミラーリング用データ */
 UCLASS()
