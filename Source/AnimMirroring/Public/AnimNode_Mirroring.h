@@ -22,7 +22,7 @@ struct FMirroringTarget
 	FBoneReference CounterpartBoneRef;
 
 	UPROPERTY()
-	EMirroringAxis MirrorAxis;
+	EMirroringAxis Axis;
 
 	UPROPERTY()
 	FTransform CSRefPose;
@@ -44,14 +44,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings)
 	TArray<FMirroringTargetDefine> OverrideMirroringData;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Settings, meta = (PinHiddenByDefault))
-	bool MirroringEnable;
-
 	void Reset();
 
 protected:
 	TArray<FMirroringTarget> Targets;
 	void UpdateTargets(const FBoneContainer& RequiredBones);
+	void UpdateIfNeeds(const FBoneContainer& RequiredBones);
 
 	// FAnimNode_SkeletalControlBase interface
 	virtual void EvaluateSkeletalControl_AnyThread(

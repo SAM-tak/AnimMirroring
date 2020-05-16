@@ -3,34 +3,10 @@
 #include "Animation/AnimInstanceProxy.h"
 #include "Animation/AnimationAsset.h"
 
-namespace
-{
-inline FQuat HadamardProduct(const FQuat& q, const FVector4& v)
-{
-	return FQuat(q.X * v.X, q.Y * v.Y, q.Z * v.Z, q.W * v.W);
-};
+#include "Engine/Engine.h"
+#include "Hash/CityHash.h"
 
-inline void MirrorTransform(FTransform& InOutTransform, EMirroringAxis MirroringAxis)
-{
-	switch (MirroringAxis)
-	{
-		case EMirroringAxis::XAxis:
-			InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(-1.0f, 1.0f, 1.0f));
-			InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(1.0f, -1.0f, -1.0f, 1.0f)));
-			break;
-		case EMirroringAxis::YAxis:
-			InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(1.0f, -1.0f, 1.0f));
-			InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(-1.0f, 1.0f, -1.0f, 1.0f)));
-			break;
-		case EMirroringAxis::ZAxis:
-			InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(1.0f, 1.0f, -1.0f));
-			InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(-1.0f, -1.0f, 1.0f, 1.0f)));
-			break;
-	}
-}
-} // anonymous namespace
-
-FAnimNode_Mirroring::FAnimNode_Mirroring() : FAnimNode_SkeletalControlBase(), MirroringData(nullptr), MirroringEnable(true)
+FAnimNode_Mirroring::FAnimNode_Mirroring() : FAnimNode_SkeletalControlBase(), MirroringData(nullptr)
 {
 }
 
@@ -54,23 +30,9 @@ void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(
 
 	check(OutBoneTransforms.Num() == 0);
 
-	if (!MirroringEnable)
-	{
-		return;
-	}
-
-	FTransform componentTransform = Output.AnimInstanceProxy->GetComponentTransform();
 	const FBoneContainer& boneContainer = Output.Pose.GetPose().GetBoneContainer();
 
-	if (Targets.Num() == 0 &&
-		(OverrideMirroringData.Num() > 0 || (MirroringData && (MirroringData->MirroringTargetDefines.Num() > 0 ||
-																  MirroringData->DefaultMirroringAxis != EMirroringAxis::None))))
-	{
-		UpdateTargets(boneContainer);
-	}
-
-	if (Targets.Num() > 0 && !Targets[0].BoneRef.IsValidToEvaluate())
-		InitializeBoneReferences(boneContainer);
+	UpdateIfNeeds(boneContainer);
 
 	// mirroring pose.
 	for (auto& target : Targets)
@@ -92,8 +54,8 @@ void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(
 				bt.SetRotation(bt.GetRotation() * bpt.GetRotation().Inverse());
 				bt.SetLocation(bt.GetLocation() - bpt.GetLocation());
 
-				MirrorTransform(at, target.MirrorAxis);
-				MirrorTransform(bt, target.MirrorAxis);
+				UAnimMirroringData::MirrorTransform(at, target.Axis);
+				UAnimMirroringData::MirrorTransform(bt, target.Axis);
 
 				at.SetRotation(at.GetRotation() * bpt.GetRotation());
 				at.SetLocation(at.GetLocation() + bpt.GetLocation());
@@ -108,7 +70,7 @@ void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(
 				at.SetRotation(at.GetRotation() * apt.GetRotation().Inverse());
 				at.SetLocation(at.GetLocation() - apt.GetLocation());
 
-				MirrorTransform(at, target.MirrorAxis);
+				UAnimMirroringData::MirrorTransform(at, target.Axis);
 
 				at.SetRotation(at.GetRotation() * apt.GetRotation());
 				at.SetLocation(at.GetLocation() + apt.GetLocation());
@@ -124,7 +86,7 @@ void FAnimNode_Mirroring::EvaluateSkeletalControl_AnyThread(
 
 bool FAnimNode_Mirroring::IsValidToEvaluate(const USkeleton* Skeleton, const FBoneContainer& RequiredBones)
 {
-	return MirroringEnable;
+	return Alpha > 0;
 }
 
 void FAnimNode_Mirroring::InitializeBoneReferences(const FBoneContainer& RequiredBones)
@@ -180,7 +142,7 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 			if (mirroringAxis != EMirroringAxis::None)
 			{
 				FMirroringTarget target;
-				target.MirrorAxis = mirroringAxis;
+				target.Axis = mirroringAxis;
 
 				target.BoneRef.BoneName = boneName;
 
@@ -221,4 +183,17 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 			}
 		}
 	}
+}
+
+void FAnimNode_Mirroring::UpdateIfNeeds(const FBoneContainer& RequiredBones)
+{
+	if (Targets.Num() == 0 &&
+		(OverrideMirroringData.Num() > 0 || (MirroringData && (MirroringData->MirroringTargetDefines.Num() > 0 ||
+																  MirroringData->DefaultMirroringAxis != EMirroringAxis::None))))
+	{
+		UpdateTargets(RequiredBones);
+	}
+
+	if (Targets.Num() > 0 && !Targets[0].BoneRef.IsValidToEvaluate())
+		InitializeBoneReferences(RequiredBones);
 }

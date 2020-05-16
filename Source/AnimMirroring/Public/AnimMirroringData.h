@@ -4,7 +4,7 @@
 #include "AnimMirroringData.generated.h"
 
 /** ミラーリングの軸 */
-UENUM(BlueprintType)
+UENUM()
 enum class EMirroringAxis : uint8
 {
 	// ミラーリングしない
@@ -18,7 +18,7 @@ enum class EMirroringAxis : uint8
 };
 
 /** ボーン名の指定規則 */
-UENUM(BlueprintType)
+UENUM()
 enum class EMirroringMatchMode : uint8
 {
 	// 完全一致
@@ -81,4 +81,28 @@ public:
 	TArray<FMirroringTargetDefine> MirroringTargetDefines;
 
 	bool FindMirroringAxis(const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName);
+
+    static inline FQuat HadamardProduct(const FQuat& q, const FVector4& v)
+	{
+		return FQuat(q.X * v.X, q.Y * v.Y, q.Z * v.Z, q.W * v.W);
+	};
+
+	static inline void MirrorTransform(FTransform& InOutTransform, EMirroringAxis MirroringAxis)
+	{
+		switch (MirroringAxis)
+		{
+			case EMirroringAxis::XAxis:
+				InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(-1.0f, 1.0f, 1.0f));
+				InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(1.0f, -1.0f, -1.0f, 1.0f)));
+				break;
+			case EMirroringAxis::YAxis:
+				InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(1.0f, -1.0f, 1.0f));
+				InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(-1.0f, 1.0f, -1.0f, 1.0f)));
+				break;
+			case EMirroringAxis::ZAxis:
+				InOutTransform.SetLocation(InOutTransform.GetLocation() * FVector(1.0f, 1.0f, -1.0f));
+				InOutTransform.SetRotation(HadamardProduct(InOutTransform.GetRotation(), FVector4(-1.0f, -1.0f, 1.0f, 1.0f)));
+				break;
+		}
+	}
 };
