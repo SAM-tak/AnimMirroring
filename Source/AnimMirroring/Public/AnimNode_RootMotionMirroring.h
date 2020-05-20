@@ -18,7 +18,6 @@ struct ANIMMIRRORING_API FAnimNode_RootMotionMirroring : public FAnimNode_Base
 	virtual void Initialize_AnyThread(const FAnimationInitializeContext& Context) override;
 	virtual void Update_AnyThread(const FAnimationUpdateContext& Context) override;
 	virtual void Evaluate_AnyThread(FPoseContext& Output) override;
-	virtual bool WantsSkippedUpdates() const override;
 	// End of FAnimNode_Base interface
 
 public:

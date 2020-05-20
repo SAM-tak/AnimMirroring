@@ -21,28 +21,29 @@ void FAnimNode_RootMotionMirroring::Update_AnyThread(const FAnimationUpdateConte
 {
 	FAnimNode_Base::Update_AnyThread(Context);
 	AssetPlayer.Update(Context);
-	if (bEnabled && Axis != EMirroringAxis::None && AssetPlayer.GetLinkNode())
+
+	if (IsLODEnabled(Context.AnimInstanceProxy))
 	{
-		auto refRootT = Context.AnimInstanceProxy->GetRequiredBones().GetRefPoseArray()[0];
-		auto assetPlayer = (FAnimNode_AssetPlayerBase*) AssetPlayer.GetLinkNode();
-		assetPlayer->ModifyRootMotionDelegate.AddLambda([this, refRootT](FTransform& Out) {
-			Out.SetRotation(Out.GetRotation() * refRootT.GetRotation().Inverse());
-			Out.SetLocation(Out.GetLocation() - refRootT.GetLocation());
+		GetEvaluateGraphExposedInputs().Execute(Context);
 
-			UAnimMirroringData::MirrorTransform(Out, Axis);
+		if (bEnabled && Axis != EMirroringAxis::None && AssetPlayer.GetLinkNode())
+		{
+			auto refRootT = Context.AnimInstanceProxy->GetRequiredBones().GetRefPoseArray()[0];
+			auto assetPlayer = (FAnimNode_AssetPlayerBase*) AssetPlayer.GetLinkNode();
+			assetPlayer->ModifyRootMotionDelegate.BindLambda([this, refRootT](FTransform& Out) {
+				Out.SetRotation(Out.GetRotation() * refRootT.GetRotation().Inverse());
+				Out.SetLocation(Out.GetLocation() - refRootT.GetLocation());
 
-			Out.SetRotation(Out.GetRotation() * refRootT.GetRotation());
-			Out.SetLocation(Out.GetLocation() + refRootT.GetLocation());
-		});
+				UAnimMirroringData::MirrorTransform(Out, Axis);
+
+				Out.SetRotation(Out.GetRotation() * refRootT.GetRotation());
+				Out.SetLocation(Out.GetLocation() + refRootT.GetLocation());
+			});
+		}
 	}
 }
 
 void FAnimNode_RootMotionMirroring::Evaluate_AnyThread(FPoseContext& Output)
 {
 	AssetPlayer.Evaluate(Output);
-}
-
-bool FAnimNode_RootMotionMirroring::WantsSkippedUpdates() const
-{
-	return !bEnabled || Axis == EMirroringAxis::None;
 }
