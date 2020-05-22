@@ -8,8 +8,6 @@
 
 This plug-in is provide "animation mirroring".
 
-We have two type animnode: local scape mirroring and component space mirroring.
-
 ## Install
 
 1. Clone the repositry under "{UnrealProjectPath}/Plugins" directory.
