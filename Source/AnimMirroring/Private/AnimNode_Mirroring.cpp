@@ -113,23 +113,22 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 	if (OverrideMirroringData.Num() > 0 || (MirroringData && (MirroringData->MirroringTargetDefines.Num() > 0 ||
 																 MirroringData->DefaultMirroringAxis != EMirroringAxis::None)))
 	{
-		for (int i = 0; i < RequiredBones.GetCompactPoseNumBones(); i++)
+		for (int i = 0; i < RequiredBones.GetNumBones(); i++)
 		{
-			auto skeletonIndex = RequiredBones.GetSkeletonIndex(FCompactPoseBoneIndex(i));
+			auto boneName = RequiredBones.GetReferenceSkeleton().GetBoneName(i);
 
-			if (skeletonIndex >= RequiredBones.GetNumBones())
-			{
-				continue;
-			}
-
-			auto boneName = RequiredBones.GetReferenceSkeleton().GetBoneName(skeletonIndex);
-
+			bool skip = false;
 			for (auto& j : Targets)
 			{
 				if (j.BoneRef.BoneName == boneName ||
-					(j.CounterpartBoneRef.BoneName.IsNone() && j.CounterpartBoneRef.BoneName == boneName))
-					continue;
+					(!j.CounterpartBoneRef.BoneName.IsNone() && j.CounterpartBoneRef.BoneName == boneName))
+				{
+					skip = true;
+					break;
+				}
 			}
+			if (skip)
+				continue;
 
 			FString counterpartBoneNameString;
 			EMirroringAxis mirroringAxis;
@@ -146,12 +145,12 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 
 				target.BoneRef.BoneName = boneName;
 
-				FTransform bonePose = RequiredBones.GetRefPoseTransform(FCompactPoseBoneIndex(i));
-				FCompactPoseBoneIndex parentIndex = RequiredBones.GetParentBoneIndex(FCompactPoseBoneIndex(i));
+				FTransform bonePose = RequiredBones.GetReferenceSkeleton().GetRefBonePose()[i];
+				int parentIndex = RequiredBones.GetParentBoneIndex(i);
 
-				while (parentIndex.GetInt() != INDEX_NONE)
+				while (parentIndex != INDEX_NONE)
 				{
-					FTransform parentPose = RequiredBones.GetRefPoseTransform(parentIndex);
+					FTransform parentPose = RequiredBones.GetReferenceSkeleton().GetRefBonePose()[parentIndex];
 					bonePose = bonePose * parentPose;
 					parentIndex = RequiredBones.GetParentBoneIndex(parentIndex);
 				}
@@ -161,17 +160,17 @@ void FAnimNode_Mirroring::UpdateTargets(const FBoneContainer& RequiredBones)
 				if (!counterpartBoneNameString.IsEmpty())
 				{
 					FName counterpartBoneName(*counterpartBoneNameString);
-					auto j = RequiredBones.GetPoseBoneIndexForBoneName(counterpartBoneName);
-					if (j >= 0)
+					int j = RequiredBones.GetPoseBoneIndexForBoneName(counterpartBoneName);
+					if (j != INDEX_NONE)
 					{
 						target.CounterpartBoneRef.BoneName = counterpartBoneName;
 
-						bonePose = RequiredBones.GetRefPoseTransform(FCompactPoseBoneIndex(j));
-						parentIndex = RequiredBones.GetParentBoneIndex(FCompactPoseBoneIndex(j));
+						bonePose = RequiredBones.GetReferenceSkeleton().GetRefBonePose()[j];
+						parentIndex = RequiredBones.GetParentBoneIndex(j);
 
-						while (parentIndex.GetInt() != INDEX_NONE)
+						while (parentIndex != INDEX_NONE)
 						{
-							FTransform parentPose = RequiredBones.GetRefPoseTransform(parentIndex);
+							FTransform parentPose = RequiredBones.GetReferenceSkeleton().GetRefBonePose()[parentIndex];
 							bonePose = bonePose * parentPose;
 							parentIndex = RequiredBones.GetParentBoneIndex(parentIndex);
 						}
