@@ -104,12 +104,14 @@ bool FMirroringTargetDefine::FindMirroringAxis(const TArray<FMirroringTargetDefi
 		}
 		else if (i.IsMatchAsCounterpart(InBoneName))
 		{
-			OutCounterpartBoneName = i.GetCounterCounterpartBoneName(InBoneName);
-			OutMirroringAxis = i.MirroringAxis;
+			//OutCounterpartBoneName = i.GetCounterCounterpartBoneName(InBoneName);
+			//OutMirroringAxis = i.MirroringAxis;
+			OutCounterpartBoneName.Empty();
+			OutMirroringAxis = EMirroringAxis::None;
 			return true;
 		}
 	}
-	OutCounterpartBoneName = "";
+	OutCounterpartBoneName.Empty();
 	OutMirroringAxis = EMirroringAxis::None;
 	return false;
 }
