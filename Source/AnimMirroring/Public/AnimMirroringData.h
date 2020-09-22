@@ -56,10 +56,10 @@ struct ANIMMIRRORING_API FMirroringTargetDefine
 	FMirroringTargetDefine(EMirroringMatchMode InNameRule, const FString& InBoneName, const FString& InCounterpartBoneName,
 		EMirroringAxis InMirrorAxis);
 
-	bool IsMatch(const FString& InBoneName);
-	bool IsMatchAsCounterpart(const FString& InBoneName);
-	FString GetCounterpartBoneName(const FString& BoneName);
-	FString GetCounterCounterpartBoneName(const FString& BoneName);
+	bool IsMatch(const FString& InBoneName) const;
+	bool IsMatchAsCounterpart(const FString& InBoneName) const;
+	FString GetCounterpartBoneName(const FString& BoneName) const;
+	FString GetCounterCounterpartBoneName(const FString& BoneName) const;
 
 	static bool FindMirroringAxis(const TArray<FMirroringTargetDefine>& MirroringTargetDef, const FString& InBoneName,
 		EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName);
@@ -80,7 +80,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FMirroringTargetDefine> MirroringTargetDefines;
 
-	bool FindMirroringAxis(const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName);
+	bool FindMirroringAxis(const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName) const;
 
     static inline FQuat HadamardProduct(const FQuat& q, const FVector4& v)
 	{
@@ -105,4 +105,37 @@ public:
 				break;
 		}
 	}
+};
+
+/** ミラーリングするアニメーションカーブ情報 */
+USTRUCT(BlueprintType)
+struct ANIMMIRRORING_API FMirroringAnimCurveDefine
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// ボーン名の指定規則
+	EMirroringMatchMode MatchMode;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// 対象カーブの名前
+	FString AnimCurveName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// ミラーリングする時の対になるカーブの名前
+	FString CounterpartAnimCurveName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	// 値もミラーリングするか？
+	bool bValueInverting;
+
+	FMirroringAnimCurveDefine();
+	FMirroringAnimCurveDefine(EMirroringMatchMode InNameRule, const FString& InAnimCurveName, bool ValueInverting);
+	FMirroringAnimCurveDefine(
+		EMirroringMatchMode InNameRule, const FString& InAnimCurveName, const FString& InCounterpartAnimCurveName, bool ValueInverting);
+
+	bool IsMatch(const FString& InAnimCurveName) const;
+	FString GetCounterpartAnimCurveName(const FString& InAnimCurveName) const;
+
+	static int Find(const TArray<FMirroringAnimCurveDefine>& InDefines, const FString& InAnimCurveName);
 };

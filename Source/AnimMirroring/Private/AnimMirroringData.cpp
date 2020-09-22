@@ -17,7 +17,7 @@ FMirroringTargetDefine::FMirroringTargetDefine(
 {
 }
 
-bool FMirroringTargetDefine::IsMatch(const FString& InBoneName)
+bool FMirroringTargetDefine::IsMatch(const FString& InBoneName) const
 {
 	if (BoneName.IsEmpty())
 		return false;
@@ -36,7 +36,7 @@ bool FMirroringTargetDefine::IsMatch(const FString& InBoneName)
 	}
 }
 
-bool FMirroringTargetDefine::IsMatchAsCounterpart(const FString& InBoneName)
+bool FMirroringTargetDefine::IsMatchAsCounterpart(const FString& InBoneName) const
 {
 	if (CounterpartBoneName.IsEmpty())
 		return false;
@@ -55,7 +55,7 @@ bool FMirroringTargetDefine::IsMatchAsCounterpart(const FString& InBoneName)
 	}
 }
 
-FString FMirroringTargetDefine::GetCounterpartBoneName(const FString& InBoneName)
+FString FMirroringTargetDefine::GetCounterpartBoneName(const FString& InBoneName) const
 {
 	if (MatchMode == EMirroringMatchMode::HeadMatch)
 	{
@@ -73,7 +73,7 @@ FString FMirroringTargetDefine::GetCounterpartBoneName(const FString& InBoneName
 	return "";
 }
 
-FString FMirroringTargetDefine::GetCounterCounterpartBoneName(const FString& InBoneName)
+FString FMirroringTargetDefine::GetCounterCounterpartBoneName(const FString& InBoneName) const
 {
 	if (MatchMode == EMirroringMatchMode::HeadMatch)
 	{
@@ -117,7 +117,7 @@ bool FMirroringTargetDefine::FindMirroringAxis(const TArray<FMirroringTargetDefi
 }
 
 bool UAnimMirroringData::FindMirroringAxis(
-	const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName)
+	const FString& InBoneName, EMirroringAxis& OutMirroringAxis, FString& OutCounterpartBoneName) const
 {
 	if (FMirroringTargetDefine::FindMirroringAxis(MirroringTargetDefines, InBoneName, OutMirroringAxis, OutCounterpartBoneName))
 		return true;
@@ -131,4 +131,72 @@ bool UAnimMirroringData::FindMirroringAxis(
 UAnimMirroringData::UAnimMirroringData(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer), DefaultMirroringAxis(EMirroringAxis::None)
 {
+}
+
+FMirroringAnimCurveDefine::FMirroringAnimCurveDefine() : MatchMode(EMirroringMatchMode::ExactMatch)
+{
+}
+
+FMirroringAnimCurveDefine::FMirroringAnimCurveDefine(
+	EMirroringMatchMode InNameRule, const FString& InAnimCurveName, bool InValueInverting)
+	: MatchMode(InNameRule), AnimCurveName(InAnimCurveName), bValueInverting(InValueInverting)
+{
+}
+
+FMirroringAnimCurveDefine::FMirroringAnimCurveDefine(
+	EMirroringMatchMode InNameRule, const FString& InAnimCurveName, const FString& InCounterpartAnimCurveName, bool InValueInverting)
+	: MatchMode(InNameRule)
+	, AnimCurveName(InAnimCurveName)
+	, CounterpartAnimCurveName(InCounterpartAnimCurveName)
+	, bValueInverting(InValueInverting)
+{
+}
+
+bool FMirroringAnimCurveDefine::IsMatch(const FString& InAnimCurveName) const
+{
+	if (AnimCurveName.IsEmpty())
+		return false;
+
+	if (MatchMode == EMirroringMatchMode::HeadMatch)
+	{
+		return InAnimCurveName.StartsWith(AnimCurveName);
+	}
+	else if (MatchMode == EMirroringMatchMode::TailMatch)
+	{
+		return InAnimCurveName.EndsWith(AnimCurveName);
+	}
+	else
+	{
+		return InAnimCurveName.Compare(AnimCurveName, ESearchCase::IgnoreCase) == 0;
+	}
+}
+
+FString FMirroringAnimCurveDefine::GetCounterpartAnimCurveName(const FString& InAnimCurveName) const
+{
+	if (MatchMode == EMirroringMatchMode::HeadMatch)
+	{
+		return CounterpartAnimCurveName + InAnimCurveName.RightChop(AnimCurveName.Len());
+	}
+	else if (MatchMode == EMirroringMatchMode::TailMatch)
+	{
+		return InAnimCurveName.LeftChop(AnimCurveName.Len()) + CounterpartAnimCurveName;
+	}
+	else if (MatchMode == EMirroringMatchMode::ExactMatch)
+	{
+		return CounterpartAnimCurveName;
+	}
+
+	return "";
+}
+
+int FMirroringAnimCurveDefine::Find(const TArray<FMirroringAnimCurveDefine>& InDefines, const FString& InAnimCurveName)
+{
+	for (int i = 0; i < InDefines.Num(); i++)
+	{
+		if (InDefines[i].IsMatch(InAnimCurveName))
+		{
+			return i;
+		}
+	}
+	return -1;
 }
