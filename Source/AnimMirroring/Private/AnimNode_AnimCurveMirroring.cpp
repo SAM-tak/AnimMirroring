@@ -62,23 +62,34 @@ void FAnimNode_AnimCurveMirroring::Evaluate_AnyThread(FPoseContext& Output)
 				{
 					bool inverting = MirroringData[match].bValueInverting;
 					auto CorrespondingName = MirroringData[match].GetCounterpartAnimCurveName(CurveName);
-					for (SmartName::UID_Type j = 0; j <= maxUID; j++)
+					if (CorrespondingName.IsEmpty())
 					{
-						if (i == j || ProccessedCurve[j])
-							continue;
-
-						FName tname;
-						SmartNameContainer->GetName(j, tname);
-						auto TesteeCurveName = tname.ToString();
-						if (TesteeCurveName == CorrespondingName)
+						if (inverting)
 						{
-							auto lhs = Output.Curve.Get(i);
-							auto rhs = Output.Curve.Get(j);
-							Output.Curve.Set(i, inverting ? -rhs : rhs);
-							Output.Curve.Set(j, inverting ? -lhs : lhs);
-							UE_LOG(LogAnimMirroring, Log, TEXT("Swap %s (%f) <-> %s (%f)"), *CurveName, lhs, *CorrespondingName, rhs);
-							ProccessedCurve[j] = true;
-							break;
+							Output.Curve.Set(i, -Output.Curve.Get(i));
+						}
+					}
+					else
+					{
+						for (SmartName::UID_Type j = 0; j <= maxUID; j++)
+						{
+							if (i == j || ProccessedCurve[j])
+								continue;
+
+							FName tname;
+							SmartNameContainer->GetName(j, tname);
+							auto TesteeCurveName = tname.ToString();
+							if (TesteeCurveName == CorrespondingName)
+							{
+								auto lhs = Output.Curve.Get(i);
+								auto rhs = Output.Curve.Get(j);
+								Output.Curve.Set(i, inverting ? -rhs : rhs);
+								Output.Curve.Set(j, inverting ? -lhs : lhs);
+								//UE_LOG(LogAnimMirroring, Log, TEXT("Swap %s (%f) <-> %s (%f)"), *CurveName, lhs, *CorrespondingName,
+								//	rhs);
+								ProccessedCurve[j] = true;
+								break;
+							}
 						}
 					}
 				}
