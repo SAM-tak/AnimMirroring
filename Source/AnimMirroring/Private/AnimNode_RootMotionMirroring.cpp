@@ -28,16 +28,10 @@ void FAnimNode_RootMotionMirroring::Update_AnyThread(const FAnimationUpdateConte
 
 		if (bEnabled && Axis != EMirroringAxis::None && AssetPlayer.GetLinkNode())
 		{
-			auto refRootT = Context.AnimInstanceProxy->GetRequiredBones().GetRefPoseArray()[0];
+			auto axis = Axis;
 			auto assetPlayer = (FAnimNode_AssetPlayerBase*) AssetPlayer.GetLinkNode();
-			assetPlayer->ModifyRootMotionDelegate.BindLambda([this, refRootT](FTransform& Out) {
-				Out.SetRotation(Out.GetRotation() * refRootT.GetRotation().Inverse());
-				Out.SetLocation(Out.GetLocation() - refRootT.GetLocation());
-
-				UAnimMirroringData::MirrorTransform(Out, Axis);
-
-				Out.SetRotation(Out.GetRotation() * refRootT.GetRotation());
-				Out.SetLocation(Out.GetLocation() + refRootT.GetLocation());
+			assetPlayer->ModifyRootMotionDelegate.BindLambda([axis](FTransform& Out) {
+				UAnimMirroringData::MirrorTransform(Out, axis);
 			});
 		}
 	}
