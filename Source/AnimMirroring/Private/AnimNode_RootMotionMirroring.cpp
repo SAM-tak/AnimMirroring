@@ -13,15 +13,14 @@ FAnimNode_RootMotionMirroring::FAnimNode_RootMotionMirroring() : FAnimNode_Base(
 
 void FAnimNode_RootMotionMirroring::Initialize_AnyThread(const FAnimationInitializeContext& Context)
 {
-	FAnimNode_Base::Initialize_AnyThread(Context);
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Initialize_AnyThread)
+	Super::Initialize_AnyThread(Context);
 	AssetPlayer.Initialize(Context);
 }
 
 void FAnimNode_RootMotionMirroring::Update_AnyThread(const FAnimationUpdateContext& Context)
 {
-	FAnimNode_Base::Update_AnyThread(Context);
-	AssetPlayer.Update(Context);
-
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Update_AnyThread)
 	if (IsLODEnabled(Context.AnimInstanceProxy))
 	{
 		GetEvaluateGraphExposedInputs().Execute(Context);
@@ -35,9 +34,11 @@ void FAnimNode_RootMotionMirroring::Update_AnyThread(const FAnimationUpdateConte
 			});
 		}
 	}
+	AssetPlayer.Update(Context);
 }
 
 void FAnimNode_RootMotionMirroring::Evaluate_AnyThread(FPoseContext& Output)
 {
+	DECLARE_SCOPE_HIERARCHICAL_COUNTER_ANIMNODE(Evaluate_AnyThread)
 	AssetPlayer.Evaluate(Output);
 }
