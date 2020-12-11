@@ -5,23 +5,23 @@
 	"FriendlyName": "AnimMirroring",
 	"Description": "Mirroring AnimNode.",
 	"Category": "Animation",
-	"CreatedBy": "Daisuke Mizuma",
-	"CreatedByURL": "",
-	"DocsURL": "",
+	"CreatedBy": "Daisuke Mizuma, Eragon-Brisingr, SAMtak",
+	"CreatedByURL": "https://github.com/mamemame360/AnimMirroring",
+	"DocsURL": "https://github.com/mamemame360/AnimMirroring",
 	"MarketplaceURL": "",
-	"SupportURL": "",
-	"CanContainContent": true,
+	"SupportURL": "https://github.com/mamemame360/AnimMirroring/issues",
+	"CanContainContent": false,
 	"IsBetaVersion": false,
 	"Installed": false,
 	"Modules": [
 		{
 			"Name": "AnimMirroring",
-			"Type": "Developer",
+			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		},
 		{
 			"Name": "AnimMirroringEditor",
-			"Type": "Developer",
+			"Type": "UncookedOnly",
 			"LoadingPhase": "PreDefault"
 		}
 	]

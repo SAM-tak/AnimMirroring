@@ -129,17 +129,18 @@ bool UAnimMirroringData::FindMirroringAxis(
 }
 
 UAnimMirroringData::UAnimMirroringData(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer), DefaultMirroringAxis(EMirroringAxis::None)
+	: Super(ObjectInitializer), DefaultMirroringAxis(EMirroringAxis::None), MirroringTargetDefines()
 {
 }
 
-FMirroringAnimCurveDefine::FMirroringAnimCurveDefine() : MatchMode(EMirroringMatchMode::ExactMatch)
+FMirroringAnimCurveDefine::FMirroringAnimCurveDefine()
+	: MatchMode(EMirroringMatchMode::ExactMatch), AnimCurveName(), CounterpartAnimCurveName(), bValueInverting(false)
 {
 }
 
 FMirroringAnimCurveDefine::FMirroringAnimCurveDefine(
 	EMirroringMatchMode InNameRule, const FString& InAnimCurveName, bool InValueInverting)
-	: MatchMode(InNameRule), AnimCurveName(InAnimCurveName), bValueInverting(InValueInverting)
+	: MatchMode(InNameRule), AnimCurveName(InAnimCurveName), CounterpartAnimCurveName(), bValueInverting(InValueInverting)
 {
 }
 
